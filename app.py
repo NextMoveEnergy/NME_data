@@ -6,6 +6,7 @@ pg = st.navigation([
     st.Page('_pages/priloga_a.py', title="Priloga A 2.6"),
     st.Page('_pages/priloga_b.py', title="Priloga A 2.7"),
     st.Page('_pages/json_dist.py', title="Json to distribution"),
+    st.Page('_pages/epos_xml.py', title="Generate Epos XML"),
     #st.Page('_pages/mojelektro_client.py', title="Moj Elektro"),
 ])
 
