@@ -93,7 +93,7 @@ def create_df_from_mq_json(meter_reading, interval_readings):
 
     df = json_normalize(interval_readings)
     df = df[['timestamp', 'value']]
-    df.attrs['messageType'] = meter_reading['messageType']
+    # df.attrs['messageType'] = meter_reading['messageType']
     df.attrs['messageCreated'] = meter_reading['messageCreated']
     df['timestamp'] = to_datetime(df['timestamp'])
     df['timestamp'] = df['timestamp'].dt.tz_localize(None)

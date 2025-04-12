@@ -62,7 +62,7 @@ def main():
 
     ceeps_id = st.selectbox('CEEPS Identity', ('NME', 'SFA'))
 
-    message_type = st.selectbox('Type of meter readings', ('Daily 15 minute', 'Monthly 15 minute'))
+    message_type = st.selectbox('Type of meter readings', ('Daily 15 minute', 'Monthly 15 minute', 'Specify date'))
 
     start_date, end_date = "", ""
     if message_type == 'Specify date':

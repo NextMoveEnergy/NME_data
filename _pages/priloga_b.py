@@ -2,6 +2,7 @@ import pandas as pd
 import streamlit as st
 import xml.etree.ElementTree as ET
 from datetime import datetime
+from collections import defaultdict
 
 sifra_izvora_bremenitve = {
     'RR': 'Redni račun na mesečnem obračunu',
@@ -346,7 +347,7 @@ def extract_splosno_priloge(priloga):
         'LetoPodatka': priloga.find('Splosno/LetoPodatka').text,
         'MesecFinancneRealizacije': priloga.find('Splosno/MesecFinancneRealizacije').text,
         'SkupniRacun': priloga.find('Splosno/SkupniRacun').text,
-        'Meritve15min': priloga.find('Splosno/Meritve15min').text,
+        'Meritve15min': priloga.find('Splosno/Meritve15min').text if priloga.find('Splosno/Meritve15min') != None else "",
         'DatumMeritve15minOd': priloga.find('Splosno/DatumMeritve15minOd').text,
         'SifraUvrstitveObracuna': sifra_uvrstitve_obracuna[priloga.find('Splosno/SifraUvrstitveObracuna').text],
         'SifraIzvoraBremenitve': sifra_izvora_bremenitve[priloga.find('Splosno/SifraIzvoraBremenitve').text],
@@ -430,28 +431,295 @@ def extract_sumarne_kolicine(priloga):
     for item in priloga.findall('.//SumarneKolicineEnergijaVrstica'):
         sifra = item.findtext('SifraZaracunljivegaElementa')
         entry = {
-            sifra + '_SifraZaracunljivegaElementa': sifra_zaracunljivega_elementa[sifra],
+            # sifra + '_SifraZaracunljivegaElementa': sifra_zaracunljivega_elementa[sifra],
             sifra + '_SumarnaKolicina': item.find('SumarnaKolicina').text.replace(".", ","),
         }
         data.append(entry)
     return data
 
-def flatten_data(data):
-    flattened_data = []
+
+def convert_to_df(data):
+    columns=[
+        "Verzija",	
+        "ZaporednaStevilkaPrilogaA",
+        "CasObjave",
+        "StevilkaGS1MerilneTocke",
+        "TipMerilneTocke",
+        "Distribucija",
+        "DavcnaStevilkaPlacnika",
+        "NazivPlacnika",
+        "NaslovnikNaMerilniTocki",	
+        "LetoPodatka",
+        "MesecFinancneRealizacije",
+        "SkupniRacun",	
+        "Meritve15min",
+        "DatumMeritve15minOd",
+        "SifraUvrstitveObracuna",
+        "SifraIzvoraBremenitve",
+        "DatumIzstavitve",
+        "DatumZapadlosti",
+        "ObdobjeOd",
+        "ObdobjeDo",
+        "StevilkaIzvornegaPodatka",
+        "LetoIzvornegaPodatka",
+        "Odjava",
+        "RazlogObracuna",	
+        "PotrebenObracunDobavitelja",
+        "VrstaTarifeZaObracun",
+        "EnotniIdentifikatorMerilnegaMesta",
+        "GS1MerilnegaMesta",
+        "NazivMerilnegaMesta",
+        "SNizvod",
+        "PrikljucnaMoc",
+        "StevilkaStevca",
+        "ObracunskaVarovalka",
+        "SifraOdjemneSkupine",
+        "SifraUporabniskeSkupine",
+        "SifraNacinaObracuna",
+        "OdstotekIzgubTransformacije",
+        "SifraOlajsaveZaObracunOmreznine",
+
+        "4_SifraZaracunljivegaElementa_1",
+        "4_StanjeStaro_Odbirek_1",
+        "4_StanjeStaro_DatumStanja_1",
+        "4_StanjeNovo_Odbirek_1",
+        "4_StanjeNovo_DatumStanja_1",
+        "4_StanjeRazlika_1",
+        "4_SifraNacinaPridobitveStanja_1",
+        "4_KonstantaStevca_1",
+        "4_Kolicina_1",
+        "4_SifraKorekcijeKolicin_1",
+
+        "4_SifraZaracunljivegaElementa_2",
+        "4_StanjeStaro_Odbirek_2",
+        "4_StanjeStaro_DatumStanja_2",
+        "4_StanjeNovo_Odbirek_2",
+        "4_StanjeNovo_DatumStanja_2",
+        "4_StanjeRazlika_2",
+        "4_SifraNacinaPridobitveStanja_2",
+        "4_KonstantaStevca_2",
+        "4_Kolicina_2",
+        "4_SifraKorekcijeKolicin_2",
+
+        "4_SumarnaKolicina",
+
+        "5_SifraZaracunljivegaElementa_1",
+        "5_StanjeStaro_Odbirek_1",
+        "5_StanjeStaro_DatumStanja_1",
+        "5_StanjeNovo_Odbirek_1",
+        "5_StanjeNovo_DatumStanja_1",
+        "5_StanjeRazlika_1",
+        "5_SifraNacinaPridobitveStanja_1",
+        "5_KonstantaStevca_1",
+        "5_Kolicina_1",
+        "5_SifraKorekcijeKolicin_1",
+
+        "5_SifraZaracunljivegaElementa_2",
+        "5_StanjeStaro_Odbirek_2",
+        "5_StanjeStaro_DatumStanja_2",
+        "5_StanjeNovo_Odbirek_2",
+        "5_StanjeNovo_DatumStanja_2",
+        "5_StanjeRazlika_2",
+        "5_SifraNacinaPridobitveStanja_2",
+        "5_KonstantaStevca_2",
+        "5_Kolicina_2",
+        "5_SifraKorekcijeKolicin_2",
+
+        "5_SumarnaKolicina",
+
+        "6_SifraZaracunljivegaElementa_1",
+        "6_StanjeStaro_Odbirek_1",
+        "6_StanjeStaro_DatumStanja_1",
+        "6_StanjeNovo_Odbirek_1",
+        "6_StanjeNovo_DatumStanja_1",
+        "6_StanjeRazlika_1",
+        "6_SifraNacinaPridobitveStanja_1",
+        "6_KonstantaStevca_1",
+        "6_Kolicina_1",
+        "6_SifraKorekcijeKolicin_1",
+
+        "6_SifraZaracunljivegaElementa_2",
+        "6_StanjeStaro_Odbirek_2",
+        "6_StanjeStaro_DatumStanja_2",
+        "6_StanjeNovo_Odbirek_2",
+        "6_StanjeNovo_DatumStanja_2",
+        "6_StanjeRazlika_2",
+        "6_SifraNacinaPridobitveStanja_2",
+        "6_KonstantaStevca_2",
+        "6_Kolicina_2",
+        "6_SifraKorekcijeKolicin_2",
+
+        "6_SumarnaKolicina",
+
+        "2001_SifraZaracunljivegaElementa",
+        "2001_ObdobjeOd",
+        "2001_ObdobjeDo",
+        "2001_Kolicina",
+        "2001_EnotaMere",
+        "2001_Cena",
+        "2001_DatumUveljavitveCene",
+        "2001_Valuta",
+        "2001_Znesek",
+        "2001_StopnjaDDV",
+
+        "2002_SifraZaracunljivegaElementa",
+        "2002_ObdobjeOd",
+        "2002_ObdobjeDo",
+        "2002_Kolicina",
+        "2002_EnotaMere",
+        "2002_Cena",
+        "2002_DatumUveljavitveCene",
+        "2002_Valuta",
+        "2002_Znesek",
+        "2002_StopnjaDDV",
+
+        "2003_SifraZaracunljivegaElementa",
+        "2003_ObdobjeOd",
+        "2003_ObdobjeDo",
+        "2003_Kolicina",
+        "2003_EnotaMere",
+        "2003_Cena",
+        "2003_DatumUveljavitveCene",
+        "2003_Valuta",
+        "2003_Znesek",
+        "2003_StopnjaDDV",
+
+        "2004_SifraZaracunljivegaElementa",
+        "2004_ObdobjeOd",
+        "2004_ObdobjeDo",
+        "2004_Kolicina",
+        "2004_EnotaMere",
+        "2004_Cena",
+        "2004_DatumUveljavitveCene",
+        "2004_Valuta",
+        "2004_Znesek",
+        "2004_StopnjaDDV",
+
+        "2201_SifraZaracunljivegaElementa",
+        "2201_ObdobjeOd",
+        "2201_ObdobjeDo",
+        "2201_Kolicina",
+        "2201_EnotaMere",
+        "2201_Cena",
+        "2201_DatumUveljavitveCene",
+        "2201_Valuta",
+        "2201_Znesek",
+        "2201_StopnjaDDV",
+
+        "2202_SifraZaracunljivegaElementa",
+        "2202_ObdobjeOd",
+        "2202_ObdobjeDo",
+        "2202_Kolicina",
+        "2202_EnotaMere",
+        "2202_Cena",
+        "2202_DatumUveljavitveCene",
+        "2202_Valuta",
+        "2202_Znesek",
+        "2202_StopnjaDDV",
+
+        "2203_SifraZaracunljivegaElementa",
+        "2203_ObdobjeOd",
+        "2203_ObdobjeDo",
+        "2203_Kolicina",
+        "2203_EnotaMere",
+        "2203_Cena",
+        "2203_DatumUveljavitveCene",
+        "2203_Valuta",
+        "2203_Znesek",
+        "2203_StopnjaDDV",
+
+        "2204_SifraZaracunljivegaElementa",
+        "2204_ObdobjeOd",
+        "2204_ObdobjeDo",
+        "2204_Kolicina",
+        "2204_EnotaMere",
+        "2204_Cena",
+        "2204_DatumUveljavitveCene",
+        "2204_Valuta",
+        "2204_Znesek",
+        "2204_StopnjaDDV",
+
+        "9_SifraZaracunljivegaElementa",
+        "9_ObdobjeOd",
+        "9_ObdobjeDo",
+        "9_Kolicina",
+        "9_EnotaMere",
+        "9_Cena",
+        "9_DatumUveljavitveCene",
+        "9_Valuta",
+        "9_Znesek",
+        "9_StopnjaDDV",
+
+        "10_SifraZaracunljivegaElementa",
+        "10_ObdobjeOd",
+        "10_ObdobjeDo",
+        "10_Kolicina",
+        "10_EnotaMere",
+        "10_Cena",
+        "10_DatumUveljavitveCene",
+        "10_Valuta",
+        "10_Znesek",
+        "10_StopnjaDDV",
+
+        "12_SifraZaracunljivegaElementa",
+        "12_ObdobjeOd",
+        "12_ObdobjeDo",
+        "12_Kolicina",
+        "12_EnotaMere",
+        "12_Cena",
+        "12_DatumUveljavitveCene",
+        "12_Valuta",
+        "12_Znesek",
+        "12_StopnjaDDV",
+
+        "21_SifraZaracunljivegaElementa",
+        "21_ObdobjeOd",
+        "21_ObdobjeDo",
+        "21_Kolicina",
+        "21_EnotaMere",
+        "21_Cena",
+        "21_DatumUveljavitveCene",
+        "21_Valuta",
+        "21_Znesek",
+        "21_StopnjaDDV",
+        ]
+    
+    table = pd.DataFrame()
+    
     for priloga in data:
-        row = {}
+        entries = defaultdict(list)
         for section in priloga:
             for index, item in enumerate(section):
                 for column, value in item.items():
-                    # Check for duplicate column
-                    st.write()
-                    if column in row.keys():
-                        column = column + "_" + str(index)
-                        row[column] = value
-                    else:
-                        row[column] = value
-        flattened_data.append(row)
-    return flattened_data
+                    entries[column].append(value)
+        row = {}
+        for column_name, values in entries.items():
+            for index, value in enumerate(values):
+                if len(values) > 1:
+                    suffix = index + 1
+                    column = column_name + "_" + str(suffix)
+                    row[column] = value
+                elif column_name.startswith(('4_SumarnaKolicina', '5_SumarnaKolicina', '6_SumarnaKolicina')):
+                    column = column_name
+                    row[column] = value
+                elif len(values) == 1 and column_name.startswith(('4', '5', '6')):
+                    suffix = index + 1
+                    column = column_name + "_" + str(suffix)
+                    row[column] = value
+                else:
+                    column = column_name
+                    row[column] = value
+        
+        temp_df = pd.DataFrame.from_dict([row])
+
+        table = pd.concat([table, temp_df])
+
+    priloge = pd.DataFrame()
+
+    for column in columns:
+        priloge[column] = table.get(column)
+
+    return priloge.sort_values(by='ZaporednaStevilkaPrilogaA')
 
 
 def convert(path):
@@ -472,10 +740,9 @@ def convert(path):
                 extract_obracunski_podatki(priloga),
             ])
 
-    flattened_data = flatten_data(data)
+    data = convert_to_df(data)
 
-    df = pd.DataFrame(flattened_data)
-    st.dataframe(df, use_container_width=True)
+    st.dataframe(data, use_container_width=True, hide_index=True)
 
 
 def main():
