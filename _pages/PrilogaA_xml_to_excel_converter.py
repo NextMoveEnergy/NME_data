@@ -3,62 +3,59 @@ import pandas as pd
 import xml.etree.ElementTree as ET
 from io import BytesIO
 
-st.title("XML to Excel Converter")
-
-uploaded_file = st.file_uploader("Upload XML file", type=["xml"])
-
-def parse_xml_to_dataframes(xml_content):
-    tree = ET.ElementTree(ET.fromstring(xml_content))
+def parse_full_xml(xml_file):
+    tree = ET.parse(xml_file)
     root = tree.getroot()
+    data = {}
 
-    namespaces = {
-        'gl': 'http://www.gesmes.org/xml/2002-08-01',
-        'ns': 'http://schemas.lis.energy/billing/1.1',
-    }
+    # Recursive function to flatten all elements
+    def flatten(element, prefix=''):
+        for child in element:
+            tag = child.tag.split('}')[-1]
+            key = f"{prefix}{tag}" if prefix == '' else f"{prefix}_{tag}"
+            if list(child):
+                flatten(child, key)
+            else:
+                text = child.text.strip() if child.text else ''
+                if key in data:
+                    i = 2
+                    while f"{key}_{i}" in data:
+                        i += 1
+                    key = f"{key}_{i}"
+                data[key] = text
 
-    data = []
-    measurement_rows = []
+    flatten(root)
+    return data
 
-    for reading in root.findall('.//ns:Readings/ns:Reading', namespaces):
-        for point in reading.findall('.//ns:IntervalReading', namespaces):
-            quantity = point.find('ns:Quantity', namespaces)
-            time = point.find('ns:Time', namespaces)
-
-            if quantity is not None and time is not None:
-                measurement_rows.append({
-                    'Time': time.text,
-                    'Quantity': quantity.text
-                })
-
-    measurement_df = pd.DataFrame(measurement_rows)
-
-    return measurement_df
-
-def convert_df_to_excel(df):
+def to_excel(df):
     output = BytesIO()
     with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
-        df.to_excel(writer, index=False, sheet_name='Measurements')
+        df.to_excel(writer, index=False, sheet_name='Parsed XML')
     output.seek(0)
     return output
 
-if uploaded_file:
-    xml_content = uploaded_file.read()
+st.title("Priloga A v2.7 XML Parser (All Fields)")
 
-    try:
-        measurement_df = parse_xml_to_dataframes(xml_content)
+uploaded_files = st.file_uploader("Upload one or more Priloga A XML files", type="xml", accept_multiple_files=True)
 
-        if not measurement_df.empty:
-            st.success("XML parsed successfully.")
-            st.dataframe(measurement_df)
+if uploaded_files:
+    all_data = []
+    for xml_file in uploaded_files:
+        try:
+            parsed = parse_full_xml(xml_file)
+            parsed["Filename"] = xml_file.name
+            all_data.append(parsed)
+        except Exception as e:
+            st.error(f"Error processing {xml_file.name}: {e}")
 
-            excel_data = convert_df_to_excel(measurement_df)
-            st.download_button(
-                label="Download Excel file",
-                data=excel_data,
-                file_name="measurement_data.xlsx",
-                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-            )
-        else:
-            st.warning("No measurement data found in the XML.")
-    except Exception as e:
-        st.error(f"Error processing XML file: {e}")
+    if all_data:
+        df = pd.DataFrame(all_data)
+        st.dataframe(df)
+
+        excel_data = to_excel(df)
+        st.download_button(
+            label="Download Excel File",
+            data=excel_data,
+            file_name="priloga_a_parsed.xlsx",
+            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        )
