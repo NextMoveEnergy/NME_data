@@ -390,17 +390,26 @@ def extract_merilni_podatki(priloga):
     data = []
     for item in priloga.findall('.//MerilniPodatkiVrstica'):
         sifra = item.findtext('SifraZaracunljivegaElementa')
+        try:
+            element_name = sifra_zaracunljivega_elementa.get(sifra, f"Unknown element ({sifra})")
+            pridobitev_stanja = sifra_pridobitve_stanja.get(item.findtext('SifraNacinaPridobitveStanja'), "Unknown")
+            korekcija = sifra_korekcije_kolicin.get(item.findtext('SifraKorekcijeKolicin'), "Unknown")
+        except KeyError:
+            element_name = f"Unknown element ({sifra})"
+            pridobitev_stanja = "Unknown"
+            korekcija = "Unknown"
+            
         entry = {
-            sifra + '_SifraZaracunljivegaElementa': sifra_zaracunljivega_elementa[sifra],
+            sifra + '_SifraZaracunljivegaElementa': element_name,
             sifra + '_StanjeStaro_Odbirek': item.find('StanjeStaro/Odbirek').text.replace(".", ","),
             sifra + '_StanjeStaro_DatumStanja': item.find('StanjeStaro/DatumStanja').text,
             sifra + '_StanjeNovo_Odbirek': item.find('StanjeNovo/Odbirek').text.replace(".", ","),
             sifra + '_StanjeNovo_DatumStanja': item.find('StanjeNovo/DatumStanja').text,
             sifra + '_StanjeRazlika': item.findtext('StanjeRazlika').replace(".", ","),
-            sifra + '_SifraNacinaPridobitveStanja': sifra_pridobitve_stanja[item.findtext('SifraNacinaPridobitveStanja')],
+            sifra + '_SifraNacinaPridobitveStanja': pridobitev_stanja,
             sifra + '_KonstantaStevca': item.findtext('KonstantaStevca').replace(".", ","),
             sifra + '_Kolicina': item.findtext('Kolicina').replace(".", ","),
-            sifra + '_SifraKorekcijeKolicin': sifra_korekcije_kolicin[item.findtext('SifraKorekcijeKolicin')]
+            sifra + '_SifraKorekcijeKolicin': korekcija
         }
         data.append(entry)
     return data
@@ -410,8 +419,13 @@ def extract_obracunski_podatki(priloga):
     data = []
     for item in priloga.findall('.//ObracunVrstica'):
         sifra = item.findtext('SifraZaracunljivegaElementa')
+        try:
+            element_name = sifra_zaracunljivega_elementa.get(sifra, f"Unknown element ({sifra})")
+        except KeyError:
+            element_name = f"Unknown element ({sifra})"
+            
         entry = {
-            sifra + '_SifraZaracunljivegaElementa': sifra_zaracunljivega_elementa[sifra],
+            sifra + '_SifraZaracunljivegaElementa': element_name,
             sifra + '_ObdobjeOd': item.find('ObdobjeOd').text,
             sifra + '_ObdobjeDo': item.find('ObdobjeDo').text,
             sifra + '_Kolicina': item.find('Kolicina').text.replace(".", ","),
