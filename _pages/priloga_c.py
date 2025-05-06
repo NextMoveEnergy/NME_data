@@ -189,6 +189,7 @@ sifra_zaracunljivega_elementa = {
     '1017': 'Prekoračitev obračunske moči nad priključno močjo',
     '9020': 'Poračun obračunske moči (žled)',
     '9021': 'Poračun prisp. OVE+SPTE (žled)',
+    '2000': 'Dosežena moč osnova za OVE in SPTE',
     '2001': 'Dogovorjena obr. moč za blok 1',
     '2002': 'Dogovorjena obr. moč za blok 2',
     '2003': 'Dogovorjena obr. moč za blok 3',
