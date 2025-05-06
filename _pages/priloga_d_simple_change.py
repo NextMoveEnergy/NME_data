@@ -760,7 +760,7 @@ def convert(path):
 def main():
     st.set_page_config(layout="wide")
 
-    st.subheader("Priloga D simple change")
+    st.subheader("Priloga A 2.8 - OVE&SPTE")
 
     path = st.file_uploader("Choose Priloga A XML files", type="xml", accept_multiple_files=True)
 
