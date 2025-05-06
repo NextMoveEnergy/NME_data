@@ -7,6 +7,7 @@ pg = st.navigation([
     st.Page('_pages/priloga_b.py', title="Priloga A 2.7"),
     st.Page('_pages/PrilogaA_xml_to_excel_converter.py', title="XML to Excel"),
     st.Page('_pages/priloga_c.py', title="Priloga A 2.8"),
+    st.Page('_pages/priloga_d_simple_change.py', title="Priloga A 2.9"),
     st.Page('_pages/json_dist.py', title="Json to distribution"),
     #st.Page('_pages/mojelektro_client.py', title="Moj Elektro"),
 ])
