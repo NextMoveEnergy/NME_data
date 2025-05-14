@@ -8,7 +8,6 @@ pg = st.navigation([
     #st.Page('_pages/priloga_c.py', title="Priloga A 2.7.5
     st.Page('_pages/priloga_2.7.1.py', title="Priloga A 2.7.1 - 2000OVE&SPTE"),
     st.Page('_pages/json_dist.py', title="Json to distribution"),
-    st.Page('_pages/json_dist_SFA.py', title="Json to distribution SFA"),
     #st.Page('_pages/mojelektro_client.py', title="Moj Elektro"),
 ])
 
