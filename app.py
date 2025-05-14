@@ -5,10 +5,10 @@ pg = st.navigation([
     st.Page('_pages/retreive_meter_readings.py', title="Meter readings"),
     st.Page('_pages/priloga_a.py', title="Priloga A 2.6"),
     st.Page('_pages/priloga_b.py', title="Priloga A 2.7"),
-    #st.Page('_pages/PrilogaA_xml_to_excel_converter.py', title="XML to Excel"),
     #st.Page('_pages/priloga_c.py', title="Priloga A 2.7.5
     st.Page('_pages/priloga_2.7.1.py', title="Priloga A 2.7.1 - 2000OVE&SPTE"),
     st.Page('_pages/json_dist.py', title="Json to distribution"),
+    st.Page('_pages/json_dist_SFA.py', title="Json to distribution SFA"),
     #st.Page('_pages/mojelektro_client.py', title="Moj Elektro"),
 ])
 
