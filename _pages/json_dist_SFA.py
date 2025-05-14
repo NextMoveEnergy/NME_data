@@ -31,7 +31,30 @@ def get_dist_for_metering_point(metering_point, dobava_mt_df, odkup_mt_df, podpo
 
 
 def merge_to_dist_dfs(dataframes, mt_dist_file):
-    # Read metadata sheets
+    df_dict_dobava = {
+        2: DataFrame(),
+        3: DataFrame(),
+        4: DataFrame(),
+        6: DataFrame(),
+        7: DataFrame()
+    }
+
+    df_dict_odkup = {
+        2: DataFrame(),
+        3: DataFrame(),
+        4: DataFrame(),
+        6: DataFrame(),
+        7: DataFrame()
+    }
+
+    df_dict_podpora = {
+        2: DataFrame(),
+        3: DataFrame(),
+        4: DataFrame(),
+        6: DataFrame(),
+        7: DataFrame()
+    }
+
     dobava_mt_df = read_excel(mt_dist_file, sheet_name='dobava')
     odkup_mt_df = read_excel(mt_dist_file, sheet_name='odkup')
     podpora_mt_df = read_excel(mt_dist_file, sheet_name='obratovalna_podpora')
@@ -40,20 +63,16 @@ def merge_to_dist_dfs(dataframes, mt_dist_file):
     odkup_mt_df['merilna_tocka'] = odkup_mt_df['merilna_tocka'].astype(str)
     podpora_mt_df['merilna_tocka'] = podpora_mt_df['merilna_tocka'].astype(str)
 
-    df_dict_dobava = {k: DataFrame() for k in distribucije}
-    df_dict_odkup = {k: DataFrame() for k in distribucije}
-    df_dict_podpora = {k: DataFrame() for k in distribucije}
-
     for df in dataframes:
-        metering_point = df.columns[0]
-        dist, tip, naziv_placnika = get_dist_for_metering_point(
-            metering_point, dobava_mt_df, odkup_mt_df, podpora_mt_df
-        )
+        metering_point = df.columns[0]  # Get column name that is MT
+
+        dist, tip, naziv_placnika = get_dist_for_metering_point(metering_point, dobava_mt_df, odkup_mt_df,
+                                                                podpora_mt_df)
         if dist == -1:
             print("INFO: Could not find distribution for " + metering_point + ".")
             continue
 
-        df.columns = MultiIndex.from_tuples([(naziv_placnika, metering_point)])
+        df.columns = MultiIndex.from_tuples([(naziv_placnika, df.columns[0])])
 
         match tip:
             case "dobava":
@@ -63,9 +82,7 @@ def merge_to_dist_dfs(dataframes, mt_dist_file):
             case "podpora":
                 df_dict_podpora[dist] = concat([df_dict_podpora[dist], df]).sort_values('timestamp')
 
-    # Attach original order for reference
-    return df_dict_dobava, df_dict_odkup, df_dict_podpora, dobava_mt_df, odkup_mt_df, podpora_mt_df
-
+    return df_dict_dobava, df_dict_odkup, df_dict_podpora
 
 
 def create_df_from_mq_json(meter_reading, interval_readings):
@@ -118,17 +135,19 @@ def get_dataframes_ceeps_json(readings):
     return dataframes
 
 
-def save_distributions(df_dict_dobava, df_dict_odkup, df_dict_podpora, dobava_mt_df, odkup_mt_df, podpora_mt_df):
+def save_distributions(df_dict_dobava, df_dict_odkup, df_dict_podpora):
+    # Initialize a BytesIO object for the zip file
     zip_io = BytesIO()
 
+    # Initialize a ZipFile object
     with zipfile.ZipFile(zip_io, 'w', zipfile.ZIP_DEFLATED) as zip_file:
         data_and_names = [
-            (df_dict_dobava, 'Odjem.xlsx', dobava_mt_df),
-            (df_dict_odkup, 'Oddaja.xlsx', odkup_mt_df),
-            (df_dict_podpora, 'Obratovalna_podpora.xlsx', podpora_mt_df)
+            (df_dict_dobava, 'Odjem.xlsx'),
+            (df_dict_odkup, 'Oddaja.xlsx'),
+            (df_dict_podpora, 'Obratovalna_podpora.xlsx')
         ]
 
-        for df_dict, excel_filename, mt_df in data_and_names:
+        for df_dict, excel_filename in data_and_names:
             if all(df.empty for df in df_dict.values()):
                 continue
 
@@ -136,57 +155,46 @@ def save_distributions(df_dict_dobava, df_dict_odkup, df_dict_podpora, dobava_mt
                 output = BytesIO()
 
                 with ExcelWriter(output, engine='xlsxwriter') as writer:
-                    for dist_id in df_dict:
-                        df = df_dict[dist_id]
-                        if df.empty:
+                    for key in df_dict:
+                        if df_dict[key].empty:
                             continue
 
-                        # Group by timestamp
-                        df.columns.name = None  # remove column names if any
-                        df = df.groupby('timestamp').sum()
+                        # Sort columns and group by 'timestamp'
+                        df_dict[key] = df_dict[key].sort_index(axis=1, level=0)
+                        df_dict[key] = df_dict[key].groupby('timestamp').sum().reset_index(col_level=1)
 
-                        # Extract MTs in order for this distribution
-                        mt_order = mt_df[mt_df['distribucija'] == dist_id]['merilna_tocka'].astype(str).tolist()
+                        sheet_name = distribucije[key]
 
-                        # Keep only columns that are in the order list and in df
-                        existing_cols = [col for col in mt_order if col in df.columns]
+                        # Write each key as a separate sheet in the Excel file
+                        df_dict[key].to_excel(writer, sheet_name=sheet_name)
 
-                        # Reorder columns
-                        df = df[existing_cols]
+                        writer.sheets[sheet_name].set_row(2, None, None, {'hidden': True})
 
-                        # Restore timestamp as column and reset index
-                        df = df.reset_index()
+                        writer.sheets[sheet_name].autofit()
+                        writer.sheets[sheet_name].set_column_pixels(1, 1, 130)
 
-                        # Optionally rename columns to MultiIndex with payer name
-                        metering_point_to_payer = dict(zip(mt_df['merilna_tocka'], mt_df['naziv_placnika']))
-                        df.columns = ['timestamp'] + [(metering_point_to_payer.get(mt, ""), mt) for mt in df.columns[1:]]
-
-                        # Write to Excel
-                        sheet_name = distribucije[dist_id]
-                        df.to_excel(writer, sheet_name=sheet_name, index=False)
-
-                        ws = writer.sheets[sheet_name]
-                        ws.set_row(2, None, None, {'hidden': True})
-                        ws.autofit()
-                        ws.set_column_pixels(1, 1, 130)
-                        ws.set_selection(3, 2, 3, 2)
-
+                        writer.sheets[sheet_name].set_selection(3, 2, 3, 2)
 
                 output.seek(0)
+
+                # Add the Excel file to the zip file
                 zip_file.writestr(excel_filename, output.getvalue())
 
             except Exception as e:
                 traceback.print_exc()
                 print(f"ERROR - Could not write: {excel_filename}")
 
+    # Move the file pointer of the zip file back to the start
     zip_io.seek(0)
+
+    # Create a download button for the zip file
     st.download_button(label="Download", data=zip_io, file_name='files.zip', mime='application/zip', key='zip_file')
 
 
 def main():
     st.set_page_config(layout="centered")
 
-    st.subheader("Json to distributions SFA")
+    st.subheader("Json to distributions")
 
     uploaded_files = st.file_uploader(label="Upload files", type=["json"], accept_multiple_files=True)
 
@@ -216,10 +224,9 @@ def main():
                 else:
                     dataframes = get_dataframes_mq_json(data)
 
-                df_dict_dobava, df_dict_odkup, df_dict_podpora, dobava_mt_df, odkup_mt_df, podpora_mt_df = merge_to_dist_dfs(dataframes, mt_dist_file)
+                df_dict_dobava, df_dict_odkup, df_dict_podpora = merge_to_dist_dfs(dataframes, mt_dist_file)
 
-                save_distributions(df_dict_dobava, df_dict_odkup, df_dict_podpora, dobava_mt_df, odkup_mt_df, podpora_mt_df)
-
+                save_distributions(df_dict_dobava, df_dict_odkup, df_dict_podpora)
 
                 st.dataframe(missing_data)
 
