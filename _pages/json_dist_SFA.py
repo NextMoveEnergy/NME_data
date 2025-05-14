@@ -142,19 +142,26 @@ def save_distributions(df_dict_dobava, df_dict_odkup, df_dict_podpora, dobava_mt
                             continue
 
                         # Group by timestamp
-                        df = df.groupby('timestamp').sum().reset_index()
+                        df.columns.name = None  # remove column names if any
+                        df = df.groupby('timestamp').sum()
 
-                        # Reorder columns based on the Excel file's MT order
+                        # Extract MTs in order for this distribution
                         mt_order = mt_df[mt_df['distribucija'] == dist_id]['merilna_tocka'].astype(str).tolist()
 
-                        # Flatten MultiIndex to match MTs
-                        col_mapping = {col[1]: col for col in df.columns if isinstance(col, tuple)}
-                        ordered_cols = [col_mapping[mt] for mt in mt_order if mt in col_mapping]
+                        # Keep only columns that are in the order list and in df
+                        existing_cols = [col for col in mt_order if col in df.columns]
 
-                        # Apply the reordering, keeping timestamp first
-                        if 'timestamp' in df.columns:
-                            df = df[['timestamp'] + ordered_cols]
+                        # Reorder columns
+                        df = df[existing_cols]
 
+                        # Restore timestamp as column and reset index
+                        df = df.reset_index()
+
+                        # Optionally rename columns to MultiIndex with payer name
+                        metering_point_to_payer = dict(zip(mt_df['merilna_tocka'], mt_df['naziv_placnika']))
+                        df.columns = ['timestamp'] + [(metering_point_to_payer.get(mt, ""), mt) for mt in df.columns[1:]]
+
+                        # Write to Excel
                         sheet_name = distribucije[dist_id]
                         df.to_excel(writer, sheet_name=sheet_name, index=False)
 
@@ -163,6 +170,7 @@ def save_distributions(df_dict_dobava, df_dict_odkup, df_dict_podpora, dobava_mt
                         ws.autofit()
                         ws.set_column_pixels(1, 1, 130)
                         ws.set_selection(3, 2, 3, 2)
+
 
                 output.seek(0)
                 zip_file.writestr(excel_filename, output.getvalue())
