@@ -31,62 +31,52 @@ def get_dist_for_metering_point(metering_point, dobava_mt_df, odkup_mt_df, podpo
 
 
 def merge_to_dist_dfs(dataframes, mt_dist_file):
-    # Read the mt_dist file to maintain the order
-    dobava_mt_df = read_excel(mt_dist_file, sheet_name='dobava')
-    odkup_mt_df = read_excel(mt_dist_file, sheet_name='odkup')
-    podpora_mt_df = read_excel(mt_dist_file, sheet_name='obratovalna_podpora')
-
-    # Ensure the 'merilna_tocka' column is of type string
-    dobava_mt_df['merilna_tocka'] = dobava_mt_df['merilna_tocka'].astype(str)
-    odkup_mt_df['merilna_tocka'] = odkup_mt_df['merilna_tocka'].astype(str)
-    podpora_mt_df['merilna_tocka'] = podpora_mt_df['merilna_tocka'].astype(str)
-
-    # Create empty dictionaries for each distribution type
+    # Initialize the dictionaries to store DataFrames for each distribution
     df_dict_dobava = {2: DataFrame(), 3: DataFrame(), 4: DataFrame(), 6: DataFrame(), 7: DataFrame()}
     df_dict_odkup = {2: DataFrame(), 3: DataFrame(), 4: DataFrame(), 6: DataFrame(), 7: DataFrame()}
     df_dict_podpora = {2: DataFrame(), 3: DataFrame(), 4: DataFrame(), 6: DataFrame(), 7: DataFrame()}
 
-    # Iterate over the metering point dataframes
-    for df in dataframes:
-        metering_point = df.columns[0]  # Get column name that is MT
+    # Read the distribution metadata from the uploaded mt_dist_file
+    dobava_mt_df = read_excel(mt_dist_file, sheet_name='dobava')
+    odkup_mt_df = read_excel(mt_dist_file, sheet_name='odkup')
+    podpora_mt_df = read_excel(mt_dist_file, sheet_name='obratovalna_podpora')
 
+    # Ensure that 'merilna_tocka' is treated as a string for comparison
+    dobava_mt_df['merilna_tocka'] = dobava_mt_df['merilna_tocka'].astype(str)
+    odkup_mt_df['merilna_tocka'] = odkup_mt_df['merilna_tocka'].astype(str)
+    podpora_mt_df['merilna_tocka'] = podpora_mt_df['merilna_tocka'].astype(str)
+
+    # Iterate over the provided dataframes and assign them to the correct distribution
+    for df in dataframes:
+        metering_point = df.columns[0]  # Get the first column name (which is the metering point)
+
+        # Retrieve the distribution and related information based on the metering point
         dist, tip, naziv_placnika = get_dist_for_metering_point(metering_point, dobava_mt_df, odkup_mt_df, podpora_mt_df)
         if dist == -1:
-            print("INFO: Could not find distribution for " + metering_point + ".")
+            print(f"INFO: Could not find distribution for {metering_point}.")
             continue
 
+        # Set the MultiIndex for the dataframe with the metering point's placnik
         df.columns = MultiIndex.from_tuples([(naziv_placnika, df.columns[0])])
 
-        match tip:
-            case "dobava":
-                df_dict_dobava[dist] = concat([df_dict_dobava[dist], df]).sort_values('timestamp')
-            case "odkup":
-                df_dict_odkup[dist] = concat([df_dict_odkup[dist], df]).sort_values('timestamp')
-            case "podpora":
-                df_dict_podpora[dist] = concat([df_dict_podpora[dist], df]).sort_values('timestamp')
+        # Sort the data based on the 'timestamp'
+        df_sorted = df.sort_values('timestamp')
 
-    # Reorder dataframes based on the order in the distribution files
-    df_dict_dobava = {k: df_dict_dobava[k] for k in dobava_mt_df['merilna_tocka'].str.strip().unique()}
+        # Add the dataframe to the corresponding distribution dictionary
+        if tip == "dobava":
+            df_dict_dobava[dist] = concat([df_dict_dobava[dist], df_sorted])
+        elif tip == "odkup":
+            df_dict_odkup[dist] = concat([df_dict_odkup[dist], df_sorted])
+        elif tip == "podpora":
+            df_dict_podpora[dist] = concat([df_dict_podpora[dist], df_sorted])
+
+    # After processing all the dataframes, ensure that the order of metering points in each dictionary
+    # follows the order from the uploaded mt_dist_file.
     df_dict_odkup = {k: df_dict_odkup[k] for k in odkup_mt_df['merilna_tocka'].str.strip().unique()}
+    df_dict_dobava = {k: df_dict_dobava[k] for k in dobava_mt_df['merilna_tocka'].str.strip().unique()}
     df_dict_podpora = {k: df_dict_podpora[k] for k in podpora_mt_df['merilna_tocka'].str.strip().unique()}
 
     return df_dict_dobava, df_dict_odkup, df_dict_podpora
-
-
-def create_df_from_mq_json(meter_reading, interval_readings):
-    for reading in interval_readings:
-        if len(reading.get('readingQualities')) != 0:
-            missing_data.append(meter_reading['usagePoint'])
-            break
-
-    df = json_normalize(interval_readings)
-    df = df[['timestamp', 'value']]
-    df.attrs['messageCreated'] = meter_reading['messageCreated']
-    df['timestamp'] = to_datetime(df['timestamp'])
-    df['timestamp'] = df['timestamp'].dt.tz_localize(None)
-    df.set_index('timestamp', inplace=True)
-    df.rename(columns={'value': meter_reading['usagePoint']}, inplace=True)
-    return df
 
 
 def get_dataframes_mq_json(readings):
