@@ -1,4 +1,4 @@
-import streamlit as st
+import streamlit as st 
 import zipfile
 from pandas import json_normalize, to_datetime, DataFrame, read_excel, MultiIndex, concat, ExcelWriter
 import traceback
@@ -31,43 +31,26 @@ def get_dist_for_metering_point(metering_point, dobava_mt_df, odkup_mt_df, podpo
 
 
 def merge_to_dist_dfs(dataframes, mt_dist_file):
-    df_dict_dobava = {
-        2: DataFrame(),
-        3: DataFrame(),
-        4: DataFrame(),
-        6: DataFrame(),
-        7: DataFrame()
-    }
-
-    df_dict_odkup = {
-        2: DataFrame(),
-        3: DataFrame(),
-        4: DataFrame(),
-        6: DataFrame(),
-        7: DataFrame()
-    }
-
-    df_dict_podpora = {
-        2: DataFrame(),
-        3: DataFrame(),
-        4: DataFrame(),
-        6: DataFrame(),
-        7: DataFrame()
-    }
-
+    # Read the mt_dist file to maintain the order
     dobava_mt_df = read_excel(mt_dist_file, sheet_name='dobava')
     odkup_mt_df = read_excel(mt_dist_file, sheet_name='odkup')
     podpora_mt_df = read_excel(mt_dist_file, sheet_name='obratovalna_podpora')
 
+    # Ensure the 'merilna_tocka' column is of type string
     dobava_mt_df['merilna_tocka'] = dobava_mt_df['merilna_tocka'].astype(str)
     odkup_mt_df['merilna_tocka'] = odkup_mt_df['merilna_tocka'].astype(str)
     podpora_mt_df['merilna_tocka'] = podpora_mt_df['merilna_tocka'].astype(str)
 
+    # Create empty dictionaries for each distribution type
+    df_dict_dobava = {2: DataFrame(), 3: DataFrame(), 4: DataFrame(), 6: DataFrame(), 7: DataFrame()}
+    df_dict_odkup = {2: DataFrame(), 3: DataFrame(), 4: DataFrame(), 6: DataFrame(), 7: DataFrame()}
+    df_dict_podpora = {2: DataFrame(), 3: DataFrame(), 4: DataFrame(), 6: DataFrame(), 7: DataFrame()}
+
+    # Iterate over the metering point dataframes
     for df in dataframes:
         metering_point = df.columns[0]  # Get column name that is MT
 
-        dist, tip, naziv_placnika = get_dist_for_metering_point(metering_point, dobava_mt_df, odkup_mt_df,
-                                                                podpora_mt_df)
+        dist, tip, naziv_placnika = get_dist_for_metering_point(metering_point, dobava_mt_df, odkup_mt_df, podpora_mt_df)
         if dist == -1:
             print("INFO: Could not find distribution for " + metering_point + ".")
             continue
@@ -82,6 +65,11 @@ def merge_to_dist_dfs(dataframes, mt_dist_file):
             case "podpora":
                 df_dict_podpora[dist] = concat([df_dict_podpora[dist], df]).sort_values('timestamp')
 
+    # Reorder dataframes based on the order in the distribution files
+    df_dict_dobava = {k: df_dict_dobava[k] for k in dobava_mt_df['merilna_tocka'].str.strip().unique()}
+    df_dict_odkup = {k: df_dict_odkup[k] for k in odkup_mt_df['merilna_tocka'].str.strip().unique()}
+    df_dict_podpora = {k: df_dict_podpora[k] for k in podpora_mt_df['merilna_tocka'].str.strip().unique()}
+
     return df_dict_dobava, df_dict_odkup, df_dict_podpora
 
 
@@ -93,7 +81,6 @@ def create_df_from_mq_json(meter_reading, interval_readings):
 
     df = json_normalize(interval_readings)
     df = df[['timestamp', 'value']]
-    # df.attrs['messageType'] = meter_reading['messageType']
     df.attrs['messageCreated'] = meter_reading['messageCreated']
     df['timestamp'] = to_datetime(df['timestamp'])
     df['timestamp'] = df['timestamp'].dt.tz_localize(None)
@@ -127,7 +114,6 @@ def get_dataframes_ceeps_json(readings):
             except IndexError:
                 st.write("INFO: Empty interval readings for " + meter_reading['usagePoint'] + ".")
                 continue
-            # Use code from MQ because it is the same from this point forward
             df = create_df_from_mq_json(meter_reading, interval_readings)
             if df is not None:
                 dataframes.append(df)
