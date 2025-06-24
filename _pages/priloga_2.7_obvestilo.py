@@ -369,6 +369,7 @@ def extract_splosno_priloge(priloga):
         'RazlogObracuna': razlog_obracuna[priloga.find('Splosno/RazlogObracuna').text],
         'PotrebenObracunDobavitelja': priloga.find('Splosno/PotrebenObracunDobavitelja').text,
         'VrstaTarifeZaObracun': vrsta_tarife_za_obracun[priloga.find('Splosno/VrstaTarifeZaObracun').text],
+        'Vsebina': priloga.find('Vsebina').text,
     }]
 
 
@@ -444,10 +445,6 @@ def extract_sumarne_kolicine(priloga):
         }
         data.append(entry)
     return data
-
-def extract_obvestilo(priloga):
-    vsebina = priloga.findtext('ObvestiloDogovorjenaMoc/Obvestilo/Vsebina')
-    return {"Obvestilo": vsebina}
 
 def convert_to_df(data):
     columns=[
@@ -705,7 +702,7 @@ def convert_to_df(data):
         "21_Znesek",
         "21_StopnjaDDV",
         
-        "Obvestilo",
+        "Vsebina",
         ]
     
     table = pd.DataFrame()
@@ -761,8 +758,7 @@ def convert(path):
                 extract_merilna_mesta(priloga),
                 extract_merilni_podatki(priloga),
                 extract_sumarne_kolicine(priloga),
-                extract_obracunski_podatki(priloga),
-                extract_obvestilo(priloga),
+                extract_obracunski_podatki(priloga)
             ])
 
     data = convert_to_df(data)
