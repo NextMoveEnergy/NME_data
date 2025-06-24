@@ -447,8 +447,10 @@ def extract_sumarne_kolicine(priloga):
 
 def extract_obvestilo(priloga):
     for item in priloga.findall('.//Obvestilo'):
-        return {"Obvestilo" : priloga.find('Vsebina').text}
-
+        vsebina = item.find('Vsebina')
+        if vsebina is not None:
+            return {"Obvestilo": vsebina.text}
+    return {"Obvestilo": None}
 
 def convert_to_df(data):
     columns=[
