@@ -446,8 +446,8 @@ def extract_sumarne_kolicine(priloga):
     return data
 
 def extract_obvestilo(priloga):
-    vsebina = priloga.findtext('.//PrilogaA//ObvestiloDogovorjenaMoc//Obvestilo//Vsebina')
-    return {"obvestilo": vsebina}
+    vsebina = priloga.findtext('.//ObvestiloDogovorjenaMoc/Obvestilo/Vsebina')
+    return {"Obvestilo": vsebina}
 
 
 def convert_to_df(data):
