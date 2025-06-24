@@ -446,7 +446,7 @@ def extract_sumarne_kolicine(priloga):
     return data
 
 def extract_obvestilo(priloga):
-    for item in priloga.findall('.///Obvestilo'):
+    for item in priloga.findall('.//Obvestilo'):
         vsebina = item.find('Vsebina')
         if vsebina is not None:
             return {"Obvestilo": vsebina.text}
