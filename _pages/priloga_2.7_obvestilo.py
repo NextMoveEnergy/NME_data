@@ -446,7 +446,7 @@ def extract_sumarne_kolicine(priloga):
     return data
 
 def extract_obvestilo(priloga):
-    vsebina = priloga.find('.//PrilogaA//ObvestiloDogovorjenaMoc//Obvestilo//Vsebina').text
+    vsebina = priloga.findtext('.//PrilogaA//ObvestiloDogovorjenaMoc//Obvestilo//Vsebina')
     return {"obvestilo": vsebina}
 
 
