@@ -369,7 +369,7 @@ def extract_splosno_priloge(priloga):
         'RazlogObracuna': razlog_obracuna[priloga.find('Splosno/RazlogObracuna').text],
         'PotrebenObracunDobavitelja': priloga.find('Splosno/PotrebenObracunDobavitelja').text,
         'VrstaTarifeZaObracun': vrsta_tarife_za_obracun[priloga.find('Splosno/VrstaTarifeZaObracun').text],
-        'Vsebina': priloga.find('Vsebina').text,
+        'Vsebina': priloga.find('Vsebinaa').text,
     }]
 
 
