@@ -297,22 +297,29 @@ razlog_obracuna = {
     '5': 'Okvara prikazovalnika',
     '6': 'Okvara števca',
     '7': 'Drugo',
-    '8': 'Ocena pri rednem popisu',
+    '8': 'Ocena',
     '9': 'Napačen popis',
     '10': 'Napačna varovalka ',
-    '11': 'Sprememba plačnika ',
-    '13': 'Odjemalec javil napačno stanje ',
-    '14': 'Sprememba dobavitelja in plačnika ',
-    '15': 'Stečaj, Likvidacija, Prisilna poravnava ',
-    '16': 'Sprememba dobavitelja ',
-    '17': 'Napačno obračunana moč ',
-    '18': 'Sprememba vrste bremenitve ',
-    '19': 'Sprememba načina posredovanja računa ',
-    '20': 'Pravno nasledstvo ',
-    '21': 'Pretarifiranje ',
-    '22': 'Sprememba obračunske moči ',
-    '23': 'Odjava/odklop ',
-    '24': 'Napačni podatki s strani dobavitelja ',
+    '11': 'Sprememba plačnika/lastnika ',
+    '12': 'Odjemalec javil napačno stanje ',
+    '13': 'Sprememba dobavitelja in plačnika ',
+    '14': 'Stečaj, Likvidacija, Prisilna poravnava ',
+    '15': 'Sprememba dobavitelja ',
+    '16': 'Napačno obračunana moč ',
+    '17': 'Sprememba vrste bremenitve ',
+    '18': 'Sprememba naslova in/ali načina posredovanja računa ',
+    '19': 'Pravno nasledstvo ',
+    '20': 'Pretarifiranje ',
+    '21': 'Sprememba obračunske/dogovorjene moči ',
+    '22': 'Odjava/odklop ',
+    '23': 'Napačni podatki s strani dobavitelja ',
+    '24': 'Sprememba PDP ',
+    '25': 'Napaka validacije meritev ',
+    '26': 'Napačna konstanta ',
+    '27': 'Sprememba vrste odjema ',
+    '28': 'Sprememba obračunske vezalne sheme ',
+    '29': 'Menjava števca ',
+    '30': 'Napačen vnos storitve (obr. varovalke, obisk monterja,…) ',
 }
 
 vrsta_tarife_za_obracun = {
@@ -437,6 +444,9 @@ def extract_sumarne_kolicine(priloga):
         }
         data.append(entry)
     return data
+
+def extract_obvestilo(priloga):
+    return {"Obvestilo" : priloga.find('Obvestilo').text}
 
 
 def convert_to_df(data):
@@ -694,6 +704,8 @@ def convert_to_df(data):
         "21_Valuta",
         "21_Znesek",
         "21_StopnjaDDV",
+        
+        "Obvestilo",
         ]
     
     table = pd.DataFrame()
@@ -750,6 +762,7 @@ def convert(path):
                 extract_merilni_podatki(priloga),
                 extract_sumarne_kolicine(priloga),
                 extract_obracunski_podatki(priloga),
+                extract_obvestilo(priloga),
             ])
 
     data = convert_to_df(data)
@@ -760,7 +773,7 @@ def convert(path):
 def main():
     st.set_page_config(layout="wide")
 
-    st.subheader("Priloga A 2.7.1 - OVE&SPTE")
+    st.subheader("Priloga A 2.7 - Obvestilo")
 
     path = st.file_uploader("Choose Priloga A XML files", type="xml", accept_multiple_files=True)
 
