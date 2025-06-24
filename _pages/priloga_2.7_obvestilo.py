@@ -452,6 +452,7 @@ def extract_obvestilo(priloga):
             return {"Obvestilo": vsebina.text}
     return {"Obvestilo": None}
 
+
 def convert_to_df(data):
     columns=[
         "Verzija",	
