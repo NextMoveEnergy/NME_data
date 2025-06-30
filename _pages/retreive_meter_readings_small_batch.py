@@ -89,7 +89,7 @@ def main():
         usage_points_list = df['Merilna točka'].tolist()
 
         if st.button('Retrieve', type='primary'):
-            chunk_size = 20
+            chunk_size = 10
             num_chunks = math.ceil(len(usage_points_list) / chunk_size)
             json_responses = []
 
