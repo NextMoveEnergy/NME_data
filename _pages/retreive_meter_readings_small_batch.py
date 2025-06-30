@@ -36,7 +36,7 @@ def request(message_type, ceeps_id, usage_points_chunk, start_date, end_date):
     complete_url = f"{base_url}&{usage_points_str}"
 
     try:
-        response = requests.get(complete_url, headers=headers, timeout=10)
+        response = requests.get(complete_url, headers=headers, timeout=120)
         response.raise_for_status()
         return response
     except requests.exceptions.Timeout:
