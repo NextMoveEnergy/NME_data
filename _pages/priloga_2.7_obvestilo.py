@@ -342,6 +342,9 @@ def convert_datetime(datetime_str):
 
 
 def extract_splosno_priloge(priloga):
+    obvestilo_elem = priloga.find('ObvestiloDogovorjenaMoc/Obvestilo/Vsebina')
+    vsebina_text = obvestilo_elem.text.strip() if obvestilo_elem is not None and obvestilo_elem.text else ''
+
     return [{
         'Verzija': priloga.find('Verzija').text,
         'ZaporednaStevilkaPrilogaA': priloga.find('ZaporednaStevilkaPrilogaA').text,
@@ -369,7 +372,7 @@ def extract_splosno_priloge(priloga):
         'RazlogObracuna': razlog_obracuna[priloga.find('Splosno/RazlogObracuna').text],
         'PotrebenObracunDobavitelja': priloga.find('Splosno/PotrebenObracunDobavitelja').text,
         'VrstaTarifeZaObracun': vrsta_tarife_za_obracun[priloga.find('Splosno/VrstaTarifeZaObracun').text],
-        'Vsebina': (priloga.find('ObvestiloDogovorjenaMoc/Obvestilo/Vsebina') or ET.Element('Vsebina')).text or '',
+        'Vsebina': vsebina_text,
         #'Vsebina': priloga.find('ObvestiloDogovorjenaMoc/Obvestilo/Vsebina').text,
     }]
 
