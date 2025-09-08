@@ -429,6 +429,7 @@ def extract_obracunski_podatki(priloga):
             sifra + '_ObdobjeDo': item.find('ObdobjeDo').text,
             sifra + '_Kolicina': item.find('Kolicina').text.replace(".", ","),
             sifra + '_EnotaMere': item.find('EnotaMere').text,
+            sifra + '_Faktor': item.find('Faktor').text,
             sifra + '_Cena': item.find('Cena/Cena').text.replace(".", ","),
             sifra + '_DatumUveljavitveCene': item.find('Cena/DatumUveljavitveCene').text,
             sifra + '_Valuta': item.find('Cena/Valuta').text,
