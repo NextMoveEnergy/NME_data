@@ -424,7 +424,7 @@ def extract_obracunski_podatki(priloga):
     for item in priloga.findall('.//ObracunVrstica'):
         sifra = item.findtext('SifraZaracunljivegaElementa')
         try:
-            faktor = item.find('Faktor')
+            faktor = item.find('Faktor').text
         except:
             faktor = None
         entry = {
