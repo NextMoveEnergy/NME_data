@@ -707,6 +707,18 @@ def convert_to_df(data):
         "21_StopnjaDDV",
         
         "Vsebina",
+        
+        "2101_SifraZaracunljivegaElementa",
+        "2101_ObdobjeOd",
+        "2101_ObdobjeDo",
+        "2101_Kolicina",
+        "2101_EnotaMere",
+        "2101_Cena",
+        "2101_DatumUveljavitveCene",
+        "2101_Valuta",
+        "2101_Znesek",
+        "2101_StopnjaDDV",
+        
         ]
     
     table = pd.DataFrame()
