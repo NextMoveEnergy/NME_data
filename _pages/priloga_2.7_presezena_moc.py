@@ -757,6 +757,7 @@ def convert_to_df(data):
         "2105_ObdobjeDo",
         "2105_Kolicina",
         "2105_EnotaMere",
+        "2105_Faktor",
         "2105_Cena",
         "2105_DatumUveljavitveCene",
         "2105_Valuta",
