@@ -423,13 +423,17 @@ def extract_obracunski_podatki(priloga):
     data = []
     for item in priloga.findall('.//ObracunVrstica'):
         sifra = item.findtext('SifraZaracunljivegaElementa')
+        try:
+            faktor = item.find('Faktor')
+        except:
+            faktor = None
         entry = {
             sifra + '_SifraZaracunljivegaElementa': sifra_zaracunljivega_elementa[sifra],
             sifra + '_ObdobjeOd': item.find('ObdobjeOd').text,
             sifra + '_ObdobjeDo': item.find('ObdobjeDo').text,
             sifra + '_Kolicina': item.find('Kolicina').text.replace(".", ","),
             sifra + '_EnotaMere': item.find('EnotaMere').text,
-            sifra + '_Faktor': item.find('Faktor').text,
+            sifra + '_Faktor': faktor,
             sifra + '_Cena': item.find('Cena/Cena').text.replace(".", ","),
             sifra + '_DatumUveljavitveCene': item.find('Cena/DatumUveljavitveCene').text,
             sifra + '_Valuta': item.find('Cena/Valuta').text,
