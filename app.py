@@ -13,7 +13,7 @@ pg = st.navigation([
     st.Page('_pages/json_dist.py', title="Json to distribution"),
     st.Page('_pages/json_distribution_merger.py', title="JSON DISTRIBUTION MERGE 2026"),
     st.Page('_pages/ceeps_metered_data_processor.py', title="METERED DATA AUTO 2026"),
-    st.Page('_pages/ceeps_metered_data_processor.py', title="METERED DATA AUTO 2026"),
+    st.Page('_pages/xflex_battery_ems_dashboard.py', title="ŠKRLJ DASHBOARD"),
     st.Page('_pages/ceeps_mm_mt_data_retrieval.py', title="CEEPS 15-MIN DATA - POOBLASTILO"),
     #st.Page('_pages/mojelektro_client.py', title="Moj Elektro"),
 ])
