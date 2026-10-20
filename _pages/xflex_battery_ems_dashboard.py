@@ -30,7 +30,8 @@ import streamlit as st
 
 
 API_URL = "https://hiqapi.robotina.com/nextMoveEnergy"
-DEFAULT_PLANTS = ["SK_Skrlj_1", "SK_Skrlj_2"]
+DEFAULT_PLANTS = ["SK_Skrlj_1", "SK_Skrlj_2", "Pantal"]
+DEFAULT_SELECTED_PLANTS = ["SK_Skrlj_1", "SK_Skrlj_2"]
 REQUEST_TIMEOUT_SECONDS = 20
 REFRESH_INTERVAL = "60s"
 LOCAL_TZ = ZoneInfo("Europe/Ljubljana")
@@ -860,23 +861,21 @@ def render_flow_card(
 
 
 def render_site_grid(readings: dict[str, dict[str, Any]]) -> None:
-    """
-    Show SK1 and SK2 grid meters separately, plus their combined totals.
-    Both power (kW) and 15-minute energy (kWh) are displayed.
-    """
-
     st.subheader("Grid overview")
     st.caption(
-        "Each grid meter is shown separately, plus the combined SK1 + SK2 total. "
-        "Every flow is shown in both kW and kWh."
+        "Each available plant grid channel [0] is shown separately. "
+        "The existing SK1 + SK2 combined total is kept unchanged; Pantal is shown separately."
     )
+
+    grid_config = {
+        "SK_Skrlj_1": ("SK1 grid", "M1.1"),
+        "SK_Skrlj_2": ("SK2 grid", "M2.1"),
+        "Pantal": ("Pantal grid", "Pantal · channel [0]"),
+    }
 
     grid_values: dict[str, dict[str, Any]] = {}
 
-    for plant_id, meter_name in (
-        ("SK_Skrlj_1", "M1.1"),
-        ("SK_Skrlj_2", "M2.1"),
-    ):
+    for plant_id, (title, meter_name) in grid_config.items():
         if plant_id not in readings:
             continue
 
@@ -884,6 +883,7 @@ def render_site_grid(readings: dict[str, dict[str, Any]]) -> None:
         ts = data.get("UTCtimeStamp")
 
         grid_values[plant_id] = {
+            "title": title,
             "meter": meter_name,
             "import_kw": running_interval_wh_to_kw(
                 data.get("source_energy_15min[0]"), ts
@@ -911,21 +911,15 @@ def render_site_grid(readings: dict[str, dict[str, Any]]) -> None:
             ),
         }
 
-    meter_cols = st.columns(2)
+    if not grid_values:
+        st.warning("No grid data is available for the selected plants.")
+        return
 
-    for col, plant_id, title in zip(
-        meter_cols,
-        ("SK_Skrlj_1", "SK_Skrlj_2"),
-        ("SK1 grid", "SK2 grid"),
-    ):
-        with col:
-            values = grid_values.get(plant_id)
+    cols = st.columns(min(len(grid_values), 3))
 
-            if not values:
-                st.error(f"{title}: data unavailable")
-                continue
-
-            st.markdown(f"#### {title} · {values['meter']}")
+    for idx, (plant_id, values) in enumerate(grid_values.items()):
+        with cols[idx % len(cols)]:
+            st.markdown(f"#### {values['title']} · {values['meter']}")
 
             render_flow_card(
                 "Import from grid",
@@ -950,9 +944,9 @@ def render_site_grid(readings: dict[str, dict[str, Any]]) -> None:
     sk1 = grid_values.get("SK_Skrlj_1")
     sk2 = grid_values.get("SK_Skrlj_2")
 
-    st.markdown("#### Combined grid total")
-
     if sk1 and sk2:
+        st.markdown("#### Combined SK1 + SK2 grid total")
+
         def add_optional(a: float | None, b: float | None) -> float | None:
             if a is None or b is None:
                 return None
@@ -962,7 +956,6 @@ def render_site_grid(readings: dict[str, dict[str, Any]]) -> None:
         total_import_kwh = add_optional(sk1["import_kwh"], sk2["import_kwh"])
         total_export_kw = add_optional(sk1["export_kw"], sk2["export_kw"])
         total_export_kwh = add_optional(sk1["export_kwh"], sk2["export_kwh"])
-
         total_import_last_kw = add_optional(
             sk1["import_last_kw"], sk2["import_last_kw"]
         )
@@ -1027,7 +1020,7 @@ def render_site_grid(readings: dict[str, dict[str, Any]]) -> None:
                 st.metric("15-min net energy", fmt_kwh(display_kwh))
                 st.caption(
                     "Derived from total import − total export. "
-                    "kWh is the accumulated current 15-minute interval."
+                    "Pantal is intentionally not included in this SK1 + SK2 total."
                 )
             else:
                 st.metric("Net grid flow", "—")
@@ -1037,17 +1030,12 @@ def render_site_grid(readings: dict[str, dict[str, Any]]) -> None:
             """
             <div class="section-note">
                 <b>Units:</b> kW is the average power so far in the running
-                15-minute interval. kWh is the actual accumulated energy in that
-                same interval. This makes the live values directly comparable
-                with the kWh/15min schedule.
+                15-minute interval. kWh is the accumulated energy in the same interval.
+                The SK1 + SK2 total preserves the existing site calculation; Pantal is
+                displayed independently until a combined-site relationship is explicitly defined.
             </div>
             """,
             unsafe_allow_html=True,
-        )
-
-    else:
-        st.warning(
-            "Combined grid total requires valid live data from both SK1 and SK2."
         )
 
 
@@ -1090,9 +1078,20 @@ def render_plant_live(plant_id: str, data: dict[str, Any]) -> None:
             "for SK_Skrlj_1. Its real documented PV production channel is "
             "source_energy_15min[5] (M1.3, SolarEdge 487 kW)."
         )
+    elif plant_id == "Pantal":
+        st.info(
+            "Pantal uses the same xFLEX communication specification, but no "
+            "Pantal-specific PV channel mapping has been provided. Battery, grid, "
+            "SOC, capacity, setpoint and schedules are available; PV is intentionally "
+            "not labelled until its physical channel mapping is confirmed."
+        )
 
     st.markdown("#### Battery / HEE flow")
-    battery_meter = "M1.2" if plant_id == "SK_Skrlj_1" else "M2.2"
+    battery_meter = {
+        "SK_Skrlj_1": "M1.2",
+        "SK_Skrlj_2": "M2.2",
+        "Pantal": "Pantal · HEE [7]",
+    }.get(plant_id, f"{plant_id} · HEE [7]")
 
     b1, b2, b3 = st.columns(3)
     with b1:
@@ -1156,22 +1155,32 @@ def render_plant_live(plant_id: str, data: dict[str, Any]) -> None:
     with st.expander("Exact API signal mapping used"):
         if plant_id == "SK_Skrlj_1":
             rows = [
-                ["Site grid import", "Shared grid [0]", "source_energy_15min[0]", "Imported energy from grid"],
-                ["Site grid export", "Shared grid [0]", "consumer_energy_15min[0]", "Exported energy to grid"],
+                ["Grid import", "M1.1", "source_energy_15min[0]", "Imported energy from grid"],
+                ["Grid export", "M1.1", "consumer_energy_15min[0]", "Exported energy to grid"],
                 ["PV production", "M1.3", "source_energy_15min[5]", "PV 3 / SK Škrlj / SolarEdge 487 kW"],
                 ["Battery discharge", "M1.2", "source_energy_15min[7]", "HEE 1 produced/exported energy"],
                 ["Battery charge", "M1.2", "consumer_energy_15min[7]", "HEE 1 consumed energy"],
                 ["SOC", "HEE 1", "battery_soc[7]", "Battery SOC in 0.1% units"],
             ]
-        else:
+        elif plant_id == "SK_Skrlj_2":
             rows = [
-                ["Site grid import", "Shared grid [0]", "source_energy_15min[0]", "Imported energy from grid"],
-                ["Site grid export", "Shared grid [0]", "consumer_energy_15min[0]", "Exported energy to grid"],
+                ["Grid import", "M2.1", "source_energy_15min[0]", "Imported energy from grid"],
+                ["Grid export", "M2.1", "consumer_energy_15min[0]", "Exported energy to grid"],
                 ["PV 1 production", "M2.3", "source_energy_15min[4]", "Soldin 75 kW"],
                 ["PV 2 production", "M2.4", "source_energy_15min[5]", "Škrlj 258 kW"],
                 ["Battery discharge", "M2.2", "source_energy_15min[7]", "HEE 2 produced/exported energy"],
                 ["Battery charge", "M2.2", "consumer_energy_15min[7]", "HEE 2 consumed energy"],
                 ["SOC", "HEE 2", "battery_soc[7]", "Battery SOC in 0.1% units"],
+            ]
+        else:
+            rows = [
+                ["Grid import", "Pantal · channel [0]", "source_energy_15min[0]", "Imported energy from grid"],
+                ["Grid export", "Pantal · channel [0]", "consumer_energy_15min[0]", "Exported energy to grid"],
+                ["Battery discharge", "Pantal · HEE [7]", "source_energy_15min[7]", "Battery produced/exported energy"],
+                ["Battery charge", "Pantal · HEE [7]", "consumer_energy_15min[7]", "Battery consumed energy"],
+                ["SOC", "Pantal · HEE [7]", "battery_soc[7]", "Battery SOC in 0.1% units"],
+                ["Capacity", "Pantal · HEE [7]", "battery_capacity[7]", "Battery nominal capacity"],
+                ["Setpoint", "Pantal", "plant_setpoint_used", "Actual EMS setpoint"],
             ]
 
         st.dataframe(
@@ -1658,7 +1667,7 @@ with st.sidebar:
     selected_plants = st.multiselect(
         "Plants",
         options=DEFAULT_PLANTS,
-        default=DEFAULT_PLANTS,
+        default=DEFAULT_SELECTED_PLANTS,
     )
     st.caption("Live polling interval: 60 seconds")
     st.caption(
