@@ -141,8 +141,7 @@ def main():
     st.set_page_config(page_title="CEEPS | MM → MT", page_icon="⚡", layout="wide")
     st.title("Seznam merilnih točk po merilnih mestih")
     st.caption("CEEPS · GET /merilna-mesta/seznam-mt · Ena poizvedba za vsako merilno mesto")
-    st.info("Za vsako MM pridobimo vse pripadajoče MT, skupaj z vrsto `vrstaMT`, kot jo vrne CEEPS. "
-            "Ker Swagger na sliki ne podaja pomenov vseh oznak vrste MT, oznak ne preimenujemo na pamet v odjem/oddajo.")
+    st.info("Get MT for every MM.")
 
     st.subheader("1. Seznam merilnih mest")
     tip = st.radio("Tip identifikatorja", ["GSRN MM", "Enotni identifikator MM"], horizontal=True,
