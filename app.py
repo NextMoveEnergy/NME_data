@@ -15,6 +15,8 @@ pg = st.navigation([
     st.Page('_pages/ceeps_metered_data_processor.py', title="METERED DATA AUTO 2026"),
     st.Page('_pages/xflex_battery_ems_dashboard.py', title="ROBOTINA DASHBOARD"),
     st.Page('_pages/ceeps_mm_mt_data_retrieval.py', title="CEEPS 15-MIN DATA - POOBLASTILO"),
+    st.Page('_pages/ceeps_mm_mt_data_retrieval_2.py', title="CEEPS GET DATA - POOBLASTILO - LIST"),
+    st.Page('_pages/ceeps_seznam_mt_po_mm.py', title="GET MT LIST FROM MM"),
     #st.Page('_pages/mojelektro_client.py', title="Moj Elektro"),
 ])
 
