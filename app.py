@@ -17,7 +17,7 @@ pg = st.navigation([
     st.Page('_pages/ceeps_mm_mt_data_retrieval.py', title="CEEPS 15-MIN DATA - POOBLASTILO"),
     st.Page('_pages/ceeps_mm_mt_data_retrieval_v2.py', title="CEEPS GET DATA - POOBLASTILO - LIST"),
     st.Page('_pages/ceeps_seznam_mt_po_mm.py', title="GET MT LIST FROM MM"),
-    st.Page('_pages/priloga_2.7_obvestilo_V2".py', title="Priloga A 2.7 - Obvestilo - v2"),
+    st.Page('_pages/priloga_2.7_obvestilo_V2.py', title="Priloga A 2.7 - Obvestilo - v2"),
     #st.Page('_pages/mojelektro_client.py', title="Moj Elektro"),
 ])
 
